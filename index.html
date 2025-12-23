@@ -2,258 +2,359 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Pastel Start Page</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <title>Perfect Icon Desktop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #fdfcf6;
-            --text-color: #6d6875;
-            --card-shadow: 0 4px 15px rgba(200, 200, 200, 0.2);
+            --grid-size: 50px;
         }
-        /* Цвета */
-        .color-1 { background-color: #ffdac1; color: #5e4b3e; }
-        .color-2 { background-color: #e2f0cb; color: #4a5e35; }
-        .color-3 { background-color: #b5ead7; color: #3a5f52; }
-        .color-4 { background-color: #c7ceea; color: #464d68; }
-        .color-5 { background-color: #ffb7b2; color: #6e3835; }
-        .color-6 { background-color: #fffdc2; color: #6b6940; }
 
         body {
-            margin: 0; padding: 40px;
+            margin: 0; 
             background-color: var(--bg-color);
             font-family: 'Nunito', sans-serif;
-            color: var(--text-color);
-            min-height: 100vh;
-            box-sizing: border-box;
+            height: 100vh; width: 100vw;
+            overflow: hidden; user-select: none;
+            transition: background-color 0.5s;
         }
 
-        h1 { text-align: center; color: #b5b9ff; margin-bottom: 30px; text-shadow: 2px 2px 0px #fff; }
+        #desktop { width: 100%; height: 100%; position: relative; }
 
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-bottom: 120px;
-        }
-
-        .card {
-            height: 140px;
-            border-radius: 25px;
+        .widget {
+            position: absolute;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--card-shadow);
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            user-select: none;
             text-align: center;
-            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s, transform 0.1s;
+            cursor: grab;
+            overflow: hidden;
+            color: #5e4b3e;
+            background: #fff;
         }
-        .card:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; }
-        
-        .card-title { font-weight: 800; font-size: 1.1rem; pointer-events: none; }
-        .card-icon { font-size: 2rem; margin-bottom: 5px; pointer-events: none; }
 
-        .delete-btn {
+        .widget:hover {
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            z-index: 100 !important;
+            outline: 2px solid rgba(0,0,0,0.05);
+        }
+        .widget:active { cursor: grabbing; transform: scale(0.98); }
+
+        /* КОНТЕЙНЕР ИКОНКИ */
+        .w-icon-container {
+            width: 48px; height: 48px;
+            margin-bottom: 5px;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+            position: relative;
+        }
+
+        /* Эмодзи (по умолчанию видимый) */
+        .w-emoji {
+            font-size: 2.5rem;
+            line-height: 1;
+            display: block; /* Будет скрыт JS-ом, если есть картинка */
+        }
+
+        /* Картинка (по умолчанию скрыта) */
+        .w-img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            display: none; /* Будет показана JS-ом при успешной загрузке */
+        }
+
+        .w-title { 
+            font-weight: 800; font-size: 0.95rem; 
+            pointer-events: none; max-width: 90%; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .w-link { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
+
+        .del-btn {
             position: absolute; top: 5px; right: 5px;
-            width: 22px; height: 22px;
-            background: rgba(255,255,255,0.8);
-            border-radius: 50%; color: #ff6b6b;
+            width: 20px; height: 20px;
+            background: #ff6b6b; color: white; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; transition: 0.2s; font-size: 14px; font-weight: bold;
+            cursor: pointer; font-size: 12px; font-weight: bold;
+            opacity: 0; transition: 0.2s; z-index: 20;
         }
-        .card:hover .delete-btn { opacity: 1; }
-        .delete-btn:hover { background: #fff; transform: scale(1.1); }
+        .widget:hover .del-btn { opacity: 1; }
 
-        /* КНОПКА ПЛЮС */
-        #addBtn {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 65px; height: 65px;
-            background-color: #b5ead7; color: #3a5f52;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 35px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            cursor: pointer;
-            border: 4px solid white;
-            z-index: 1000; /* Самый верхний слой */
-            user-select: none;
+        .resize-handle {
+            position: absolute; bottom: 0; right: 0;
+            width: 20px; height: 20px;
+            cursor: se-resize; z-index: 20; opacity: 0;
         }
-        #addBtn:hover { transform: scale(1.1); background-color: #a3e0cc; }
-        #addBtn:active { transform: scale(0.95); }
+        .resize-handle::after {
+            content: ''; position: absolute; bottom: 4px; right: 4px;
+            width: 0; height: 0;
+            border-style: solid; border-width: 0 0 8px 8px;
+            border-color: transparent transparent rgba(0,0,0,0.3) transparent;
+        }
+        .widget:hover .resize-handle { opacity: 1; }
 
-        /* МОДАЛЬНОЕ ОКНО */
-        #modal {
-            display: none;
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(4px);
-            align-items: center; justify-content: center;
-            z-index: 2000;
+        /* Цвета */
+        .c1 { background-color: #ffdac1; } .c2 { background-color: #e2f0cb; }
+        .c3 { background-color: #b5ead7; } .c4 { background-color: #c7ceea; }
+        .c5 { background-color: #ffb7b2; } .c6 { background-color: #fffdc2; }
+        .c7 { background-color: #ffffff; }
+
+        /* UI */
+        .float-btn {
+            position: fixed; bottom: 30px; width: 60px; height: 60px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); cursor: pointer; border: 4px solid white; 
+            z-index: 1000; transition: 0.2s; background: #fff;
         }
-        .modal-content {
-            background: white; padding: 30px; border-radius: 30px;
-            width: 300px;
-            box-shadow: 0 15px 50px rgba(181, 234, 215, 0.5);
-            text-align: center; border: 2px solid #e2f0cb;
-        }
-        input {
-            width: 90%; padding: 12px; margin: 10px 0;
-            border: 2px solid #eee; border-radius: 15px;
-            font-family: inherit; outline: none;
-        }
-        input:focus { border-color: #b5ead7; }
-        
-        .modal-buttons { display: flex; justify-content: space-around; margin-top: 20px; }
-        button { padding: 10px 20px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
-        .btn-save { background: #b5ead7; color: #3a5f52; }
-        .btn-cancel { background: #ffb7b2; color: #6e3835; }
+        .float-btn:hover { transform: scale(1.1); }
+        #addBtn { right: 30px; background: #b5ead7; color: #3a5f52; font-size: 35px; }
+        #settingsBtn { right: 110px; background: #f0f0f0; color: #555; font-size: 24px; }
+
+        /* Модалки */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); backdrop-filter: blur(5px); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 25px; width: 300px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 2px solid #fff; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; outline: none; }
+        .modal-btns { display: flex; justify-content: space-between; margin-top: 20px; }
+        button { padding: 10px 20px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; }
+        .btn-ok { background: #b5ead7; color: #3a5f52; }
+        .btn-no { background: #ffb7b2; color: #6e3835; }
     </style>
 </head>
 <body>
 
-    <div id="grid"></div>
-    
-    <div id="addBtn">+</div>
+    <div id="desktop"></div>
 
-    <div id="modal">
+    <div id="addBtn" class="float-btn">+</div>
+    <div id="settingsBtn" class="float-btn">🎨</div>
+
+    <div id="addModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin-top:0;">Новая вкладка</h2>
-            <input type="text" id="linkTitle" placeholder="Название">
-            <input type="text" id="linkUrl" placeholder="Ссылка">
-            <div class="modal-buttons">
-                <button class="btn-cancel" id="closeModalBtn">Отмена</button>
-                <button class="btn-save" id="saveLinkBtn">Добавить</button>
+            <h3>Создать</h3>
+            <input type="text" id="tInput" placeholder="Название">
+            <input type="text" id="uInput" placeholder="Ссылка">
+            <div class="modal-btns">
+                <button class="btn-no" onclick="closeModals()">Отмена</button>
+                <button class="btn-ok" onclick="addNewWidget()">ОК</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="setModal" class="modal">
+        <div class="modal-content">
+            <h3>Фон</h3>
+            <input type="color" id="bgInput" value="#fdfcf6" style="height:50px; cursor:pointer;">
+            <div class="modal-btns">
+                <button class="btn-no" onclick="closeModals()">Закрыть</button>
+                <button class="btn-ok" onclick="saveBg()">Сохранить</button>
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Элементы
-            const grid = document.getElementById('grid');
-            const modal = document.getElementById('modal');
-            const titleInput = document.getElementById('linkTitle');
-            const urlInput = document.getElementById('linkUrl');
-            const addBtn = document.getElementById('addBtn');
-            const closeBtn = document.getElementById('closeModalBtn');
-            const saveBtn = document.getElementById('saveLinkBtn');
+        const KEY = 'desktop_v9_final';
+        const BG_KEY = 'desktop_bg_final';
+        const desktop = document.getElementById('desktop');
+        
+        const SNAP_SIZE = 50; 
 
-            // Безопасная загрузка данных
-            let links = [];
-            try {
-                const stored = localStorage.getItem('myPastelLinks');
-                if (stored) links = JSON.parse(stored);
-                else {
-                    links = [
-                        { id: 1, title: "Google", url: "https://google.com", color: "color-1", icon: "🔍" },
-                        { id: 2, title: "YouTube", url: "https://youtube.com", color: "color-5", icon: "▶️" }
-                    ];
-                }
-            } catch (e) {
-                console.error("Ошибка LocalStorage:", e);
-                // Если хранилище недоступно, работаем с временным массивом
-                alert("Внимание: настройки браузера блокируют сохранение вкладок. Они пропадут после перезагрузки.");
+        let widgets = [];
+        let isDrag = false;
+        let hasMoved = false;
+        let curEl = null;
+        let startX, startY, startL, startT, startW, startH;
+
+        function load() {
+            const bg = localStorage.getItem(BG_KEY);
+            if(bg) {
+                document.body.style.setProperty('--bg-color', bg);
+                document.getElementById('bgInput').value = bg;
             }
 
-            // Рендер
-            function render() {
-                grid.innerHTML = '';
-                links.forEach(link => {
-                    const el = document.createElement('div');
-                    el.className = `card ${link.color}`;
-                    el.setAttribute('data-id', link.id);
-                    el.innerHTML = `
-                        <div class="delete-btn">✕</div>
-                        <div class="card-icon">${link.icon || '🔗'}</div>
-                        <div class="card-title">${link.title}</div>
-                    `;
-                    
-                    // Обработка клика по карточке
-                    el.addEventListener('click', (e) => {
-                        if (e.target.classList.contains('delete-btn')) {
-                            if(confirm('Удалить?')) {
-                                links = links.filter(l => l.id !== link.id);
-                                saveData();
-                                render();
-                            }
-                        } else {
-                            window.location.href = link.url;
-                        }
-                    });
-
-                    grid.appendChild(el);
-                });
-            }
-
-            function saveData() {
-                try {
-                    localStorage.setItem('myPastelLinks', JSON.stringify(links));
-                } catch(e) { console.error("Не удалось сохранить", e); }
-            }
-
-            // Обработчики кнопок (через JS, чтобы надежнее)
-            addBtn.addEventListener('click', () => {
-                modal.style.display = 'flex';
-                titleInput.focus();
-            });
-
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-
-            saveBtn.addEventListener('click', () => {
-                const title = titleInput.value.trim();
-                let url = urlInput.value.trim();
-                if (!title || !url) return alert("Заполните поля!");
-                if (!url.startsWith('http')) url = 'https://' + url;
-
-                const randomColor = `color-${Math.floor(Math.random() * 6) + 1}`;
-                const icons = ["🌸", "🍄", "✨", "🌿", "🌙", "☁️", "🥐", "🎨", "🧩", "🎧"];
-                
-                links.push({
-                    id: Date.now(),
-                    title, url,
-                    color: randomColor,
-                    icon: icons[Math.floor(Math.random() * icons.length)]
-                });
-                
-                saveData();
-                render();
-                modal.style.display = 'none';
-                titleInput.value = '';
-                urlInput.value = '';
-            });
-
-            // Закрытие по клику вне окна
-            modal.addEventListener('click', (e) => {
-                if(e.target === modal) modal.style.display = 'none';
-            });
-
-            // Инициализация Drag&Drop (если библиотека загрузилась)
-            if (typeof Sortable !== 'undefined') {
-                new Sortable(grid, {
-                    animation: 200,
-                    ghostClass: 'sortable-ghost',
-                    delay: 150, // Задержка, чтобы не путать с кликом
-                    onEnd: function (evt) {
-                        const item = links.splice(evt.oldIndex, 1)[0];
-                        links.splice(evt.newIndex, 0, item);
-                        saveData();
-                    }
-                });
+            const raw = localStorage.getItem(KEY);
+            if (raw) {
+                widgets = JSON.parse(raw);
+                widgets.forEach(createDOM);
             } else {
-                console.warn("SortableJS не загружен (нет интернета?), перетаскивание отключено.");
+                createDOM({id: 1, title: 'Google', url: 'https://google.com', x: 50, y: 50, w: 150, h: 150, c: 'c1', i: '🔍'});
             }
+        }
 
-            // Первый запуск
-            render();
+        function getFaviconUrl(url) {
+            try {
+                const domain = new URL(url).hostname;
+                return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function createDOM(data) {
+            const el = document.createElement('div');
+            el.className = `widget ${data.c}`;
+            el.id = `w-${data.id}`;
+            el.style.left = data.x + 'px';
+            el.style.top = data.y + 'px';
+            el.style.width = data.w + 'px';
+            el.style.height = data.h + 'px';
+
+            const favUrl = getFaviconUrl(data.url);
+
+            el.innerHTML = `
+                <div class="del-btn" onmousedown="delWidget(${data.id}, event)">✕</div>
+                <div class="resize-handle" onmousedown="initResize(event, '${el.id}')"></div>
+                <a href="${data.url}" class="w-link" onclick="return linkClick(event)" draggable="false"></a>
+                
+                <div class="w-icon-container">
+                    <div class="w-emoji" id="emoji-${data.id}">${data.i}</div>
+                    
+                    <img src="${favUrl}" class="w-img" 
+                        onload="this.style.display='block'; document.getElementById('emoji-${data.id}').style.display='none'"
+                        onerror="this.style.display='none'; document.getElementById('emoji-${data.id}').style.display='block'"
+                    >
+                </div>
+
+                <div class="w-title">${data.title}</div>
+            `;
+
+            el.onmousedown = (e) => {
+                if(e.target.classList.contains('del-btn') || e.target.classList.contains('resize-handle')) return;
+                initDrag(e, el);
+            };
+
+            desktop.appendChild(el);
+            if(!widgets.find(w => w.id === data.id)) widgets.push(data);
+        }
+
+        window.linkClick = function(e) {
+            if (hasMoved) { e.preventDefault(); return false; }
+            return true;
+        };
+
+        function initDrag(e, el) {
+            e.preventDefault();
+            isDrag = true; hasMoved = false; curEl = el;
+            
+            document.querySelectorAll('.widget').forEach(w => w.style.zIndex = 10);
+            el.style.zIndex = 1000;
+
+            startX = e.clientX; startY = e.clientY;
+            startL = el.offsetLeft; startT = el.offsetTop;
+
+            document.onmousemove = (ev) => {
+                if(!isDrag) return;
+                const dx = ev.clientX - startX;
+                const dy = ev.clientY - startY;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved = true;
+                curEl.style.left = (startL + dx) + 'px';
+                curEl.style.top = (startT + dy) + 'px';
+            };
+
+            document.onmouseup = () => {
+                if(isDrag && curEl) {
+                    let finalL = Math.round(curEl.offsetLeft / SNAP_SIZE) * SNAP_SIZE;
+                    let finalT = Math.round(curEl.offsetTop / SNAP_SIZE) * SNAP_SIZE;
+                    curEl.style.left = finalL + 'px';
+                    curEl.style.top = finalT + 'px';
+                    updateData(curEl);
+                }
+                isDrag = false; curEl = null;
+                document.onmousemove = null; document.onmouseup = null;
+                setTimeout(() => { hasMoved = false; }, 100);
+            };
+        }
+
+        window.initResize = function(e, id) {
+            e.stopPropagation(); e.preventDefault();
+            curEl = document.getElementById(id);
+            startX = e.clientX; startY = e.clientY;
+            startW = parseInt(curEl.style.width);
+            startH = parseInt(curEl.style.height);
+
+            document.onmousemove = (ev) => {
+                const newW = Math.max(SNAP_SIZE, startW + (ev.clientX - startX));
+                const newH = Math.max(SNAP_SIZE, startH + (ev.clientY - startY));
+                curEl.style.width = newW + 'px';
+                curEl.style.height = newH + 'px';
+            };
+
+            document.onmouseup = () => {
+                let snapW = Math.round(parseInt(curEl.style.width) / SNAP_SIZE) * SNAP_SIZE;
+                let snapH = Math.round(parseInt(curEl.style.height) / SNAP_SIZE) * SNAP_SIZE;
+                curEl.style.width = Math.max(SNAP_SIZE, snapW) + 'px';
+                curEl.style.height = Math.max(SNAP_SIZE, snapH) + 'px';
+                updateData(curEl);
+                curEl = null; document.onmousemove = null; document.onmouseup = null;
+            };
+        };
+
+        function updateData(el) {
+            const id = parseInt(el.id.split('-')[1]);
+            const item = widgets.find(w => w.id === id);
+            if(item) {
+                item.x = parseInt(el.style.left);
+                item.y = parseInt(el.style.top);
+                item.w = parseInt(el.style.width);
+                item.h = parseInt(el.style.height);
+                localStorage.setItem(KEY, JSON.stringify(widgets));
+            }
+        }
+
+        const addModal = document.getElementById('addModal');
+        const setModal = document.getElementById('setModal');
+        document.getElementById('addBtn').onclick = () => addModal.style.display = 'flex';
+        document.getElementById('settingsBtn').onclick = () => setModal.style.display = 'flex';
+        window.closeModals = () => { addModal.style.display='none'; setModal.style.display='none'; }
+
+        window.addNewWidget = () => {
+            const t = document.getElementById('tInput').value || 'Link';
+            let u = document.getElementById('uInput').value;
+            if(!u) return alert("Введите ссылку");
+            if(!u.startsWith('http')) u = 'https://' + u;
+            const colors = ['c1','c2','c3','c4','c5','c6','c7'];
+            const icons = ['🌸','🔥','✨','🚀','🎧','🧸','🥐','💎','🍋','👽'];
+            
+            let startX = 50 + Math.random() * 300;
+            let startY = 50 + Math.random() * 300;
+            startX = Math.round(startX / SNAP_SIZE) * SNAP_SIZE;
+            startY = Math.round(startY / SNAP_SIZE) * SNAP_SIZE;
+
+            const newData = {
+                id: Date.now(), title: t, url: u,
+                x: startX, y: startY, w: 150, h: 150,
+                c: colors[Math.floor(Math.random()*colors.length)],
+                i: icons[Math.floor(Math.random()*icons.length)]
+            };
+            createDOM(newData);
+            localStorage.setItem(KEY, JSON.stringify(widgets));
+            closeModals();
+            document.getElementById('tInput').value = ''; document.getElementById('uInput').value = '';
+        };
+
+        window.delWidget = (id, e) => {
+            e.stopPropagation();
+            if(confirm('Удалить?')) {
+                document.getElementById(`w-${id}`).remove();
+                widgets = widgets.filter(w => w.id !== id);
+                localStorage.setItem(KEY, JSON.stringify(widgets));
+            }
+        };
+
+        window.saveBg = () => {
+            const c = document.getElementById('bgInput').value;
+            document.body.style.setProperty('--bg-color', c);
+            localStorage.setItem(BG_KEY, c);
+            closeModals();
+        };
+        document.getElementById('bgInput').addEventListener('input', (e) => {
+            document.body.style.setProperty('--bg-color', e.target.value);
         });
+
+        load();
     </script>
 </body>
 </html>
-
